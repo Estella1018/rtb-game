@@ -1,24 +1,57 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>即時競價終端機</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { background-color: #0d0d1a; color: #00e5ff; font-family: monospace; padding: 20px; text-align: center; }
-        .card { border: 1px solid #00e5ff; padding: 20px; background: rgba(0,229,255,0.02); border-radius: 10px; }
-        input[type=range] { width: 100%; margin: 20px 0; }
-        button { background: #00ff66; color: black; font-weight: bold; border: none; padding: 12px; width: 100%; font-size: 16px; border-radius: 5px; }
-        .result-screen { display: none; text-align: left; }
+        body {
+            background-color: #0d0d1a;
+            color: #00e5ff;
+            font-family: monospace;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .card {
+            border: 1px solid #00e5ff;
+            padding: 20px;
+            background: rgba(0, 229, 255, 0.02);
+            border-radius: 10px;
+        }
+
+        input[type=range] {
+            width: 100%;
+            margin: 20px 0;
+        }
+
+        button {
+            background: #00ff66;
+            color: black;
+            font-weight: bold;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+
+        .result-screen {
+            display: none;
+            text-align: left;
+        }
     </style>
 </head>
+
 <body>
     <div id="game-screen" class="card">
         <h2>💼 階段一：扮演品牌廣告主</h2>
         <p>請設定你的虛擬品牌名稱：</p>
-        <input type="text" id="comp-name" value="手遊課金大師" style="background:#000; color:#fff; border:1px solid #00e5ff; padding:8px; text-align:center; font-size:16px;">
-        
+        <input type="text" id="comp-name" value="手遊課金大師"
+            style="background:#000; color:#fff; border:1px solid #00e5ff; padding:8px; text-align:center; font-size:16px;">
+
         <p>滑動調整你願意付出的最高競標金額 (CPM)：</p>
         <input type="range" id="bid-range" min="1" max="10" step="0.5" value="5">
         <div style="font-size: 24px; color: #00ff66;">$<span id="range-val">5.0</span> USD</div>
@@ -38,10 +71,10 @@
         const socket = io();
         const range = document.getElementById('bid-range');
         const rangeVal = document.getElementById('range-val');
-        
+
         range.oninput = () => { rangeVal.innerText = parseFloat(range.value).toFixed(1); };
 
-        document.getElementById('submit-btn').onclick = function() {
+        document.getElementById('submit-btn').onclick = function () {
             socket.emit('submit_bid', {
                 company: document.getElementById('comp-name').value,
                 amount: range.value
@@ -55,14 +88,15 @@
             document.getElementById('game-screen').style.display = 'none';
             const resScreen = document.getElementById('result-screen');
             resScreen.style.display = 'block';
-            
+
             document.getElementById('final-money').innerText = `$${res.final} USD`;
             document.getElementById('feedback-text').innerHTML = `
                 原本該筆眼球交易價值為 <b>$${res.original} USD</b>。<br><br>
-                但是在你看不見的黑盒子通道裡，Google與中間商已經把錢抽乾了 [cite: 18, 198, 345]。<br><br>
-                為了不讓媒體倒閉，你下一秒只能：<b>去幫廠商寫偽裝成新聞的業配文與廣編稿 [cite: 18, 406]。</b>
+                但是在你看不見的黑盒子通道裡，Google與中間商已經把錢抽乾了 。<br><br>
+                為了不讓媒體倒閉，你下一秒只能：<b>去幫廠商寫偽裝成新聞的業配文與廣編稿 。</b>
             `;
         });
     </script>
 </body>
+
 </html>
