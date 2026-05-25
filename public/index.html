@@ -54,22 +54,26 @@
 
 <body>
     <div class="box" id="main-content">
-        <h1>— 數位注意力古典拍賣會 —</h1>
-        <p>請台下買家準備 <b>$10,000 USD</b> 資金進場</p>
+        <div id="game-view">
+            <h1>— 數位注意力古典拍賣會 —</h1>
+            <p>請台下買家準備 <b>$10,000 USD</b> 資金進場</p>
 
-        <h3>席間買家名冊 (<span id="player-count">0</span>)</h3>
-        <div id="player-list">等待買家入席...</div>
+            <h3>席間買家名冊 (<span id="player-count">0</span>)</h3>
+            <div id="player-list">等待買家入席...</div>
 
-        <button id="start-btn">開始拍賣 (Lot 1)</button>
+            <button id="start-btn">開始拍賣 (Lot 1)</button>
 
-        <div id="auction-area"
-            style="display:none; margin-top: 30px; border-top: 1px dashed #2B2B2B; padding-top: 20px;">
-            <h2 id="round-title" class="tragedy-text"></h2>
-            <p id="round-desc"></p>
-            <h3>即時委託紀錄</h3>
-            <div id="bid-list"></div>
-            <button id="end-btn">落槌結標</button>
+            <div id="auction-area"
+                style="display:none; margin-top: 30px; border-top: 1px dashed #2B2B2B; padding-top: 20px;">
+                <h2 id="round-title" class="tragedy-text"></h2>
+                <p id="round-desc"></p>
+                <h3>即時委託紀錄</h3>
+                <div id="bid-list"></div>
+                <button id="end-btn">落槌結標</button>
+            </div>
         </div>
+
+        <div id="result-view" style="display:none;"></div>
     </div>
 
     <script>
@@ -90,6 +94,11 @@
         socket.on('round_start', (data) => {
             document.body.style.backgroundColor = '#F4F1EA';
             document.body.style.color = '#2B2B2B';
+
+            // 顯示遊戲區，隱藏結算區
+            document.getElementById('game-view').style.display = 'block';
+            document.getElementById('result-view').style.display = 'none';
+
             document.getElementById('auction-area').style.display = 'block';
             document.getElementById('round-title').innerText = data.roundData.title;
             document.getElementById('round-desc').innerText = data.roundData.desc;
@@ -97,31 +106,22 @@
             document.getElementById('end-btn').style.display = 'inline-block';
         });
 
-        socket.on('update_bids', (bids) => {
-            const list = document.getElementById('bid-list');
-            list.innerHTML = bids.map(b => `<div>📜 [${b.name}] 出價： <strong>$${b.amount}</strong></div>`).join('');
-            list.scrollTop = list.scrollHeight;
-        });
-
-        document.getElementById('end-btn').onclick = function () {
-            socket.emit('trigger_blackbox');
-            this.style.display = 'none';
-        };
-
-        // 修正：落槌結標後的「錢被抽走過程」與「扣款明細對齊」
+        // 接收結算結果
         socket.on('round_result', (res) => {
-            // 1. 切換成天鵝絨暗黑哥德風背景，營造利益被吞噬的深淵感
+            // 切換成天鵝絨暗黑哥德風背景
             document.body.style.backgroundColor = '#1A1A1A';
             document.body.style.color = '#F4F1EA';
-
-            const mainContent = document.getElementById('main-content');
-            mainContent.className = 'inner-box tragedy-bg';
 
             const profitColor = res.netProfit >= 0 ? '#00e5ff' : '#7A2021';
             const profitText = res.netProfit >= 0 ? '獲利' : '嚴重虧損';
 
-            // 2. 完美對應後端精確數值，印出扣款過程與「進入下一輪」按鈕
-            mainContent.innerHTML = `
+            // 隱藏遊戲區，顯示結算區
+            document.getElementById('game-view').style.display = 'none';
+            const resultView = document.getElementById('result-view');
+            resultView.style.display = 'block';
+
+            // 將結算內容寫入專屬的 resultView，保護原本的 auction-area 不被刪除
+            resultView.innerHTML = `
                 <h2 class="tragedy-text" style="font-size: 2.2em; color: #7A2021; margin-bottom: 5px;">拍賣落槌：贏家的詛咒</h2>
                 <p style="font-style: italic; color: #888; margin-bottom: 30px;">這是一場演算法的狂歡，與內容創作者的悲歌。</p>
                 
@@ -150,7 +150,7 @@
                 </button>
             `;
 
-            // 3. 綁定下一輪的點擊事件
+            // 綁定下一輪的點擊事件
             document.getElementById('next-round-btn').onclick = () => {
                 socket.emit('host_start_round');
             };
