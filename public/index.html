@@ -12,6 +12,8 @@
             font-family: 'Noto Serif TC', serif;
             padding: 20px;
             text-align: center;
+            transition: background-color 0.4s ease;
+            /* 加入背景色漸變效果 */
         }
 
         .box {
@@ -54,6 +56,7 @@
 
 <body>
     <div class="box" id="main-content">
+
         <div id="game-view">
             <h1>— 數位注意力古典拍賣會 —</h1>
             <p>請台下買家準備 <b>$10,000 USD</b> 資金進場</p>
@@ -73,32 +76,39 @@
             </div>
         </div>
 
-        <div id="result-view" style="display:none;"></div>
+        <div id="result-view" style="display:none;">
+        </div>
+
     </div>
 
     <script>
         const socket = io();
         let isGameOver = false;
 
+        // 玩家名單更新 (背景靜默更新，不會干擾畫面)
         socket.on('update_players', (players) => {
             if (isGameOver) return;
             document.getElementById('player-count').innerText = players.length;
             document.getElementById('player-list').innerHTML = players.map(p => `<div>🖋️ ${p.name} (剩餘資金: $${p.balance})</div>`).join('');
         });
 
+        // 按下開始拍賣
         document.getElementById('start-btn').onclick = function () {
             socket.emit('host_start_round');
-            this.style.display = 'none';
+            this.style.display = 'none'; // 隱藏開始按鈕
         };
 
+        // 接收伺服器：開始新的一輪
         socket.on('round_start', (data) => {
+            // 1. 恢復明亮背景與字體顏色
             document.body.style.backgroundColor = '#F4F1EA';
             document.body.style.color = '#2B2B2B';
 
-            // 顯示遊戲區，隱藏結算區
+            // 2. 切換區塊：顯示競標區，隱藏結算區
             document.getElementById('game-view').style.display = 'block';
             document.getElementById('result-view').style.display = 'none';
 
+            // 3. 更新該輪的文字資料
             document.getElementById('auction-area').style.display = 'block';
             document.getElementById('round-title').innerText = data.roundData.title;
             document.getElementById('round-desc').innerText = data.roundData.desc;
@@ -106,21 +116,34 @@
             document.getElementById('end-btn').style.display = 'inline-block';
         });
 
-        // 接收結算結果
+        // 即時出價紀錄
+        socket.on('update_bids', (bids) => {
+            const list = document.getElementById('bid-list');
+            list.innerHTML = bids.map(b => `<div>📜 [${b.name}] 出價： <strong>$${b.amount}</strong></div>`).join('');
+            list.scrollTop = list.scrollHeight;
+        });
+
+        // 點擊落槌
+        document.getElementById('end-btn').onclick = function () {
+            socket.emit('trigger_blackbox');
+            this.style.display = 'none';
+        };
+
+        // 接收伺服器：落槌結標結果
         socket.on('round_result', (res) => {
-            // 切換成天鵝絨暗黑哥德風背景
+            // 1. 切換成天鵝絨暗黑哥德風背景
             document.body.style.backgroundColor = '#1A1A1A';
             document.body.style.color = '#F4F1EA';
 
             const profitColor = res.netProfit >= 0 ? '#00e5ff' : '#7A2021';
             const profitText = res.netProfit >= 0 ? '獲利' : '嚴重虧損';
 
-            // 隱藏遊戲區，顯示結算區
+            // 2. 切換區塊：隱藏競標區，顯示結算區
             document.getElementById('game-view').style.display = 'none';
             const resultView = document.getElementById('result-view');
             resultView.style.display = 'block';
 
-            // 將結算內容寫入專屬的 resultView，保護原本的 auction-area 不被刪除
+            // 3. 將結算內容寫入專屬的 resultView，絕對不破壞原本的 DOM 結構
             resultView.innerHTML = `
                 <h2 class="tragedy-text" style="font-size: 2.2em; color: #7A2021; margin-bottom: 5px;">拍賣落槌：贏家的詛咒</h2>
                 <p style="font-style: italic; color: #888; margin-bottom: 30px;">這是一場演算法的狂歡，與內容創作者的悲歌。</p>
@@ -150,12 +173,13 @@
                 </button>
             `;
 
-            // 綁定下一輪的點擊事件
+            // 4. 綁定下一輪的點擊事件
             document.getElementById('next-round-btn').onclick = () => {
                 socket.emit('host_start_round');
             };
         });
 
+        // 遊戲結束：第五輪結算完畢
         socket.on('game_over', (leaderboard) => {
             isGameOver = true;
             document.body.style.backgroundColor = '#F4F1EA';
@@ -167,6 +191,7 @@
                 return `<div style="font-size:1.5em; margin: 10px 0;">${icon} 第 ${index + 1} 名: <b>${p.name}</b> <span style="color:${color}">(最終資產: $${p.balance})</span></div>`;
             }).join('');
 
+            // 這裡是最後階段，直接覆蓋整個 main-content 即可
             document.getElementById('main-content').innerHTML = `
                 <h1>— 結算：誰是資本的奴隸？ —</h1>
                 <p style="margin-bottom: 30px;">廣告主殺紅了眼，但真正的贏家只有抽成超過 60% 的科技巨頭。</p>
