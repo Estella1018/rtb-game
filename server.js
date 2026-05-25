@@ -14,10 +14,10 @@ let isBiddingOpen = false;
 
 // 💡 【五輪拍賣的劇本設定】金額皆以台幣(NTD)邏輯設計，但 trueValue 代表廣告主獲得的總轉換價值
 const roundsConfig = [
-    { title: "Lot 1：新竹市・二十代大學生", desc: "喜歡動漫、正在搜尋視覺小說與遊戲開發工具", trueValue: 3000 },
+    { title: "Lot 1：新竹市・二十代大學生", desc: "喜歡kpop、正在搜尋演唱會門票與小卡", trueValue: 4000 },
     { title: "Lot 2：竹科・三十代資深工程師", desc: "高收入、近期頻繁瀏覽房地產與新車資訊", trueValue: 8000 },
-    { title: "Lot 3：十歲國小生 (借媽媽手機)", desc: "誤觸廣告機率極高、完全無實際消費能力", trueValue: 50 },
-    { title: "Lot 4：台北市・美妝潮流網網紅", desc: "粉絲互動率高、熱愛精緻生活與醫美話題", trueValue: 4500 },
+    { title: "Lot 3：十歲國小生", desc: "誤觸廣告機率極高、完全無實際消費能力", trueValue: 50 },
+    { title: "Lot 4：台北市・美妝潮流網網紅", desc: "粉絲互動率高、熱愛精緻生活與美妝話題", trueValue: 6000 },
     { title: "Lot 5：即將結婚的新婚伴侶", desc: "急需婚紗、鑽戒、蜜月旅行規劃與餐廳預約", trueValue: 12000 }
 ];
 
