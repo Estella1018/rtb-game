@@ -4,97 +4,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>即時競價終端機</title>
+    <title>買家出價委託書</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         body {
-            background-color: #0d0d1a;
-            color: #00e5ff;
-            font-family: monospace;
+            background-color: #F4F1EA;
+            color: #2B2B2B;
+            font-family: 'Noto Serif TC', serif;
             padding: 20px;
             text-align: center;
         }
 
         .card {
-            border: 1px solid #00e5ff;
-            padding: 20px;
-            background: rgba(0, 229, 255, 0.02);
-            border-radius: 10px;
+            border: 1px solid #2B2B2B;
+            padding: 30px 20px;
+            background: #FFFDFC;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.05);
         }
 
-        input[type=range] {
-            width: 100%;
+        input[type=text],
+        input[type=number] {
+            width: 80%;
+            padding: 10px;
+            font-size: 1.1em;
             margin: 20px 0;
+            border: 1px solid #2B2B2B;
+            text-align: center;
         }
 
         button {
-            background: #00ff66;
-            color: black;
-            font-weight: bold;
+            background: #2B2B2B;
+            color: #F4F1EA;
             border: none;
-            padding: 12px;
-            width: 100%;
-            font-size: 16px;
-            border-radius: 5px;
+            padding: 15px;
+            width: 90%;
+            font-size: 1.2em;
+            cursor: pointer;
         }
 
-        .result-screen {
+        button:disabled {
+            background: #999;
+        }
+
+        .hidden {
             display: none;
-            text-align: left;
+        }
+
+        .tragedy-text {
+            color: #7A2021;
+            font-weight: bold;
         }
     </style>
 </head>
 
 <body>
-    <div id="game-screen" class="card">
-        <h2>💼 階段一：扮演品牌廣告主</h2>
-        <p>請設定你的虛擬品牌名稱：</p>
-        <input type="text" id="comp-name" value="手遊課金大師"
-            style="background:#000; color:#fff; border:1px solid #00e5ff; padding:8px; text-align:center; font-size:16px;">
-
-        <p>滑動調整你願意付出的最高競標金額 (CPM)：</p>
-        <input type="range" id="bid-range" min="1" max="10" step="0.5" value="5">
-        <div style="font-size: 24px; color: #00ff66;">$<span id="range-val">5.0</span> USD</div>
-        <br>
-        <button id="submit-btn">發送 0.1 秒即時競價請求</button>
+    <div id="login-screen" class="card">
+        <h2>— 買家入席 —</h2>
+        <p>您已獲得初始資金 <b>$10,000 USD</b></p>
+        <input type="text" id="comp-name" placeholder="請輸入品牌名稱..." value="某跨國遊戲商">
+        <button id="join-btn">入席拍賣會</button>
     </div>
 
-    <div id="result-screen" class="card result-screen">
-        <h2 style="color:#ff0055;">⛓️ 階段二：身分被強制轉變</h2>
-        <p>系統已自動將您重新綁定為：<b>【台灣在地新聞媒體】</b></p>
-        <p>你剛才在台下看著大螢幕上的幾美金在流動對吧？來看看你實際拿多少：</p>
-        <div style="font-size:36px; color:#ff0055; text-align:center; margin:20px 0;" id="final-money">$-</div>
-        <p id="feedback-text" style="color:#aaa; font-size:14px;"></p>
+    <div id="bid-screen" class="card hidden">
+        <h3 id="round-title"></h3>
+        <p style="color:#666;">您的剩餘資金：<b style="color:#2B2B2B; font-size:1.2em;">$<span id="my-balance">10000</span></b>
+        </p>
+        <hr style="margin: 20px 0;">
+        <p>請輸入本次競標額 (最高不可超過餘額)：</p>
+        <input type="number" id="bid-amount" min="1" max="10000" value="1000">
+        <button id="submit-btn">呈交委託</button>
+    </div>
+
+    <div id="wait-screen" class="card hidden">
+        <h2 id="result-title">等待拍賣官落槌...</h2>
+        <p id="result-desc"></p>
     </div>
 
     <script>
         const socket = io();
-        const range = document.getElementById('bid-range');
-        const rangeVal = document.getElementById('range-val');
+        let myBalance = 10000;
+        let myName = '';
 
-        range.oninput = () => { rangeVal.innerText = parseFloat(range.value).toFixed(1); };
-
-        document.getElementById('submit-btn').onclick = function () {
-            socket.emit('submit_bid', {
-                company: document.getElementById('comp-name').value,
-                amount: range.value
-            });
-            this.innerText = "已送入黑盒子，等待結標...";
-            this.disabled = true;
-            this.style.background = "#333";
+        document.getElementById('join-btn').onclick = () => {
+            myName = document.getElementById('comp-name').value;
+            if (!myName) return;
+            socket.emit('player_join', myName);
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('wait-screen').classList.remove('hidden');
+            document.getElementById('result-title').innerText = "已入席，等待第一件拍賣品...";
         };
 
-        socket.on('auction_result', (res) => {
-            document.getElementById('game-screen').style.display = 'none';
-            const resScreen = document.getElementById('result-screen');
-            resScreen.style.display = 'block';
+        socket.on('round_start', (data) => {
+            document.getElementById('wait-screen').classList.add('hidden');
+            document.getElementById('bid-screen').classList.remove('hidden');
+            document.getElementById('round-title').innerText = data.roundData.title;
+            document.getElementById('my-balance').innerText = myBalance;
+            document.getElementById('bid-amount').max = myBalance;
+            document.getElementById('submit-btn').innerText = "呈交委託";
+            document.getElementById('submit-btn').disabled = false;
+        });
 
-            document.getElementById('final-money').innerText = `$${res.final} USD`;
-            document.getElementById('feedback-text').innerHTML = `
-                原本該筆眼球交易價值為 <b>$${res.original} USD</b>。<br><br>
-                但是在你看不見的黑盒子通道裡，Google與中間商已經把錢抽乾了 。<br><br>
-                為了不讓媒體倒閉，你下一秒只能：<b>去幫廠商寫偽裝成新聞的業配文與廣編稿 。</b>
-            `;
+        document.getElementById('submit-btn').onclick = function () {
+            let bid = parseFloat(document.getElementById('bid-amount').value);
+            if (bid > myBalance) bid = myBalance;
+            socket.emit('submit_bid', bid);
+
+            this.innerText = "已送出，等待結果...";
+            this.disabled = true;
+        };
+
+        socket.on('round_result', (res) => {
+            document.getElementById('bid-screen').classList.add('hidden');
+            document.getElementById('wait-screen').classList.remove('hidden');
+
+            if (res.winnerId === socket.id) {
+                myBalance += res.netProfit; // 更新自己手機的餘額
+                const status = res.netProfit >= 0 ? '賺到了' : '被坑了';
+                document.getElementById('result-title').innerHTML = `落槌！您得標了，但...`;
+                document.getElementById('result-desc').innerHTML = `
+                    您出價 $${res.bidAmount}，實際價值僅 $${res.trueValue}<br><br>
+                    這波交易您 <span class="tragedy-text">${status} $${res.netProfit}</span><br>
+                    您目前剩餘資金：$${myBalance}<br><br>
+                    <span style="font-size:0.8em; color:#666;">請看大螢幕，媒體實拿少得可憐...</span>
+                `;
+            } else {
+                document.getElementById('result-title').innerText = "您未得標";
+                document.getElementById('result-desc').innerHTML = `
+                    本輪被 <b>${res.winnerName}</b> 搶走了。<br>
+                    請看大螢幕看看他是賺是賠！
+                `;
+            }
+        });
+
+        socket.on('game_over', () => {
+            document.getElementById('wait-screen').classList.remove('hidden');
+            document.getElementById('bid-screen').classList.add('hidden');
+            document.getElementById('result-title').innerText = "拍賣會結束";
+            document.getElementById('result-desc').innerHTML = "請看大螢幕確認最終排名！<br>看看誰破產了，誰又賺飽了？";
         });
     </script>
 </body>

@@ -2,53 +2,112 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>Google AdTech 黑盒子中心</title>
+    <title>注意力古典拍賣會 (五輪制)</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { background-color: #05050a; color: #00ff66; font-family: monospace; padding: 40px; text-align: center; }
-        .box { border: 2px solid #00ff66; padding: 20px; background: rgba(0,255,102,0.05); max-width: 600px; margin: 0 auto; box-shadow: 0 0 20px #00ff66; }
-        h1 { color: #00e5ff; text-shadow: 0 0 10px #00e5ff; }
-        #bid-list { text-align: left; background: #000; height: 150px; overflow-y: auto; padding: 10px; border: 1px solid #00e5ff; }
-        button { background: #ff0055; color: white; border: none; padding: 15px 30px; font-size: 18px; cursor: pointer; box-shadow: 0 0 10px #ff0055; margin-top: 20px; }
+        body { background-color: #F4F1EA; color: #2B2B2B; font-family: 'Noto Serif TC', serif; padding: 20px; text-align: center; }
+        .box { border: 1px solid #2B2B2B; padding: 30px; max-width: 800px; margin: 0 auto; }
+        h1 { font-size: 2em; letter-spacing: 2px; }
+        #bid-list, #player-list { text-align: left; height: 150px; overflow-y: auto; padding: 15px; background: #EBE7DD; margin-bottom: 20px;}
+        button { background: #2B2B2B; color: #F4F1EA; border: none; padding: 10px 20px; cursor: pointer; font-size: 1.1em; margin: 5px; }
+        .tragedy-text { color: #7A2021; }
     </style>
 </head>
 <body>
-    <h1>🤖 0.1秒的眼球拍賣會 (RTB)</h1>
-    <div class="box">
-        <h3>🎯 今日拍賣受眾標籤</h3>
-        <p>[新竹市] [陽明交大傳科系] [喜愛ACGN] [正在搜尋Blender與C#] [20代女性]</p>
-        <hr style="border-color: #00e5ff;">
-        <h3>📈 即時競價流水線 (DSP/SSP Incoming...)</h3>
-        <div id="bid-list">等待全班廣告主出價...</div>
+    <div class="box" id="main-content">
+        <h1>— 數位注意力古典拍賣會 —</h1>
+        <p>請台下買家準備 <b>$10,000 USD</b> 資金進場</p>
         
-        <button id="end-btn">啟動 Google 黑盒子結標</button>
+        <h3>席間買家名冊 (<span id="player-count">0</span>)</h3>
+        <div id="player-list">等待買家入席...</div>
+        
+        <button id="start-btn">開始拍賣 (Lot 1)</button>
+
+        <div id="auction-area" style="display:none; margin-top: 30px; border-top: 1px dashed #2B2B2B; padding-top: 20px;">
+            <h2 id="round-title" class="tragedy-text"></h2>
+            <p id="round-desc"></p>
+            <h3>即時委託紀錄</h3>
+            <div id="bid-list"></div>
+            <button id="end-btn">落槌結標</button>
+        </div>
     </div>
 
     <script>
         const socket = io();
-        const bidList = document.getElementById('bid-list');
-        
-        socket.on('update_bids', (bids) => {
-            bidList.innerHTML = bids.map(b => `<div>⚡ [${b.company}] 發出競價訊號: <span style="color:#ff0055">$${b.amount} USD</span></div>`).join('');
+        let isGameOver = false;
+
+        socket.on('update_players', (players) => {
+            if(isGameOver) return;
+            document.getElementById('player-count').innerText = players.length;
+            document.getElementById('player-list').innerHTML = players.map(p => `<div>🖋️ ${p.name} (剩餘資金: $${p.balance})</div>`).join('');
         });
 
-        document.getElementById('end-btn').onclick = () => {
-            socket.emit('trigger_blackbox');
+        document.getElementById('start-btn').onclick = function() {
+            socket.emit('host_start_round');
+            this.style.display = 'none';
         };
 
-        socket.on('auction_result', (res) => {
-            document.body.innerHTML = `
-                <h1 style="color:#ff0055; text-shadow: 0 0 20px #ff0055;">⚠️ GOOGLE 演算法執行完畢 ⚠️</h1>
-                <div class="box" style="border-color:#ff0055; box-shadow:0 0 30px #ff0055; text-align:left; font-size:18px;">
-                    <p>👑 <b>中標廣告主</b>: ${res.winner}</p>
-                    <p style="color:#00e5ff">💰 <b>原始競標總價</b>: $${res.original} USD</p>
-                    <hr style="border-color:#ff0055">
-                    <p>❌ 扣除 Google DSP 服務費 (15%): -$${res.dsp} USD</p>
-                    <p>❌ 扣除 Google SSP/AdX 公開市場抽成 (20%): -$${res.ssp} USD</p>
-                    <p>❌ 扣除 DMP數據商/代理商/中間商科技稅 (35%): -$${res.tax} USD</p>
-                    <hr style="border-color:#ff0055">
-                    <p style="font-size:24px; color:#ff0055; animation: blink 1s infinite;">🩸 <b>台灣在地新聞媒體最終收到: $${res.final} USD (約新台幣 5 元)</b></p>
-                    <p style="font-size:12px; color:#666;">系統提示：合約已由電子定型化契約自動強制簽署，不爽不要用。</p>
+        socket.on('round_start', (data) => {
+            document.body.style.backgroundColor = '#F4F1EA';
+            document.body.style.color = '#2B2B2B';
+            document.getElementById('auction-area').style.display = 'block';
+            document.getElementById('round-title').innerText = data.roundData.title;
+            document.getElementById('round-desc').innerText = data.roundData.desc;
+            document.getElementById('bid-list').innerHTML = '';
+            document.getElementById('end-btn').style.display = 'inline-block';
+        });
+
+        socket.on('update_bids', (bids) => {
+            const list = document.getElementById('bid-list');
+            list.innerHTML = bids.map(b => `<div>📜 [${b.name}] 出價： <strong>$${b.amount}</strong></div>`).join('');
+            list.scrollTop = list.scrollHeight;
+        });
+
+        document.getElementById('end-btn').onclick = function() {
+            socket.emit('trigger_blackbox');
+            this.style.display = 'none';
+        };
+
+        socket.on('round_result', (res) => {
+            document.body.style.backgroundColor = '#1A1A1A';
+            document.body.style.color = '#F4F1EA';
+            const profitColor = res.netProfit >= 0 ? '#00e5ff' : '#7A2021';
+            const profitText = res.netProfit >= 0 ? '獲利' : '嚴重虧損';
+
+            document.getElementById('auction-area').innerHTML = `
+                <h2 style="color:#F4F1EA;">拍賣落槌：贏家的詛咒</h2>
+                <div style="font-size: 1.2em; line-height: 2;">
+                    <p>⚜️ 得標買家：<b>${res.winnerName}</b> (出價 $${res.bidAmount})</p>
+                    <p>👁️ 受眾真實價值：$${res.trueValue}</p>
+                    <p style="color: ${profitColor}; font-size: 1.5em; font-weight:bold;">📉 買家本次${profitText}：$${res.netProfit}</p>
+                    <hr style="border-color:#333">
+                    <p style="color:#888;">不管買家虧多慘，Google 黑盒子平台照樣抽成...</p>
+                    <p class="tragedy-text" style="font-size:1.8em; margin-top:20px;">🩸 內容媒體最終實得：$${res.mediaFinal}</p>
+                </div>
+                <button id="next-round-btn" style="margin-top:20px;">進入下一輪</button>
+            `;
+            
+            document.getElementById('next-round-btn').onclick = () => {
+                socket.emit('host_start_round');
+            };
+        });
+
+        socket.on('game_over', (leaderboard) => {
+            isGameOver = true;
+            document.body.style.backgroundColor = '#F4F1EA';
+            document.body.style.color = '#2B2B2B';
+            
+            let rankHtml = leaderboard.map((p, index) => {
+                let color = p.balance >= 10000 ? '#27ae60' : '#c0392b';
+                let icon = index === 0 ? '👑' : (index === leaderboard.length - 1 ? '💀' : '▪️');
+                return `<div style="font-size:1.5em; margin: 10px 0;">${icon} 第 ${index+1} 名: <b>${p.name}</b> <span style="color:${color}">(最終資產: $${p.balance})</span></div>`;
+            }).join('');
+
+            document.getElementById('main-content').innerHTML = `
+                <h1>— 結算：誰是資本的奴隸？ —</h1>
+                <p style="margin-bottom: 30px;">廣告主殺紅了眼，但真正的贏家只有抽成超過 60% 的科技巨頭。</p>
+                <div style="text-align:left; max-width: 500px; margin: 0 auto;">
+                    ${rankHtml}
                 </div>
             `;
         });
