@@ -7,22 +7,22 @@ const path = require('path');
 app.use(express.static(path.join(__dirname, 'public')));
 
 // 遊戲狀態與玩家資料
-let players = {}; 
+let players = {};
 let currentRound = 0;
 let currentBids = [];
 let isBiddingOpen = false;
 
-// 💡 【五輪拍賣的劇本設定】你可以自己修改 trueValue (實際帶來的收益)
+// 💡 【五輪拍賣的劇本設定】金額皆以台幣(NTD)邏輯設計，但 trueValue 代表廣告主獲得的總轉換價值
 const roundsConfig = [
-    { title: "Lot 1：新竹市・二十代大學生", desc: "標籤：喜歡動漫、正在搜尋遊戲開發工具", trueValue: 3000 }, // 陷阱：價值普通，容易被溢價瘋搶
-    { title: "Lot 2：竹科・三十代資深工程師", desc: "標籤：高收入、近期頻繁瀏覽房地產", trueValue: 8000 }, // 大補丸：真正的高價值受眾
-    { title: "Lot 3：十歲國小生 (借媽媽手機)", desc: "標籤：誤觸廣告機率極高、無消費能力", trueValue: 50 },  // 終極陷阱：誰買誰虧到破產
-    { title: "Lot 4：台北市・美妝網紅", desc: "標籤：粉絲互動率高、熱愛精緻生活", trueValue: 4500 },
-    { title: "Lot 5：即將結婚的伴侶", desc: "標籤：急需婚紗、鑽戒、蜜月旅行規劃", trueValue: 12000 } // 最後的翻盤機會
+    { title: "Lot 1：新竹市・二十代大學生", desc: "喜歡動漫、正在搜尋視覺小說與遊戲開發工具", trueValue: 3000 },
+    { title: "Lot 2：竹科・三十代資深工程師", desc: "高收入、近期頻繁瀏覽房地產與新車資訊", trueValue: 8000 },
+    { title: "Lot 3：十歲國小生 (借媽媽手機)", desc: "誤觸廣告機率極高、完全無實際消費能力", trueValue: 50 },
+    { title: "Lot 4：台北市・美妝潮流網網紅", desc: "粉絲互動率高、熱愛精緻生活與醫美話題", trueValue: 4500 },
+    { title: "Lot 5：即將結婚的新婚伴侶", desc: "急需婚紗、鑽戒、蜜月旅行規劃與餐廳預約", trueValue: 12000 }
 ];
 
 io.on('connection', (socket) => {
-    
+
     // 玩家登入
     socket.on('player_join', (companyName) => {
         players[socket.id] = { name: companyName, balance: 10000 };
@@ -45,7 +45,7 @@ io.on('connection', (socket) => {
     // 接收玩家出價
     socket.on('submit_bid', (amount) => {
         if (!isBiddingOpen || !players[socket.id]) return;
-        
+
         let bid = parseFloat(amount);
         if (bid > players[socket.id].balance) bid = players[socket.id].balance; // 防止超額出價
 
@@ -63,16 +63,27 @@ io.on('connection', (socket) => {
         const winner = currentBids[0];
         const roundData = roundsConfig[currentRound];
 
-        // 計算贏家的盈虧 (ROI = 真實價值 - 出價)
+        // 1. 【廣告主盈虧邏輯】對廣告主（買方）而言，這是宏觀的預算投資，維持原本的獲利算法：
         const netProfit = roundData.trueValue - winner.amount;
         players[winner.id].balance += netProfit; // 更新贏家錢包
 
-        // 計算平台剝削與媒體實得 (不管廣告主賺賠，平台照抽出價金額！)
+        // 2. 【核心修正：AdTech 黑盒子抽成】所有平台的抽成，都以廣告主付出的「出價金額」為基數計算
         const originalPrice = winner.amount;
-        const dspFee = +(originalPrice * 0.15).toFixed(2);
-        const sspFee = +((originalPrice - dspFee) * 0.20).toFixed(2);
-        const techTax = +(originalPrice * 0.35).toFixed(2);
-        const mediaRevenue = +(originalPrice - dspFee - sspFee - techTax).toFixed(2);
+        const dspFee = +(originalPrice * 0.15).toFixed(2);                         // Google DSP 抽 15%
+        const sspFee = +((originalPrice - dspFee) * 0.20).toFixed(2);               // Google SSP 再抽剩餘的 20%
+        const techTax = +(originalPrice * 0.35).toFixed(2);                         // 數據商與代理商隱形稅 35%
+
+        // 平台抽完後，留在程序化交易池子裡原本剩下來的總利潤
+        const poolRemainder = +(originalPrice - dspFee - sspFee - techTax).toFixed(2);
+
+        // 3. 【核心修正：弱化媒體轉換】
+        // 論文指出，媒體在單次即時競價中被層層剝削，實拿極其微薄。
+        // 我們在這裡將留下來的錢模擬「換算成單次曝光單價（除以 1000）」並加上隨機幾塊錢的浮動
+        // 這樣能完美呈現廣告主花了 4000 多元，但台灣在地媒體卻只拿到幾塊錢的「斷崖式剝奪感」！
+        let mediaRevenue = +((poolRemainder / 1000) + (Math.random() * 3) + 1).toFixed(2);
+
+        // 確保媒體實拿在視覺上一定是符合台灣現實的慘況（新台幣 1 ~ 5 元之間）
+        if (mediaRevenue > 5) mediaRevenue = +(4 + Math.random()).toFixed(2);
 
         io.emit('round_result', {
             winnerName: winner.name,
@@ -80,7 +91,11 @@ io.on('connection', (socket) => {
             bidAmount: originalPrice,
             trueValue: roundData.trueValue,
             netProfit: netProfit,
-            mediaFinal: mediaRevenue > 0 ? mediaRevenue : 5 // 確保不會是負數，至少給個 5 塊錢
+            // 傳送個別平台的抽成數字，讓前端畫面可以把帳目完全對齊
+            dspFee: dspFee,
+            sspFee: sspFee,
+            techTax: techTax,
+            mediaFinal: mediaRevenue
         });
 
         currentRound++;

@@ -108,25 +108,49 @@
             this.style.display = 'none';
         };
 
+        // 修正：落槌結標後的「錢被抽走過程」與「扣款明細對齊」
         socket.on('round_result', (res) => {
+            // 1. 切換成天鵝絨暗黑哥德風背景，營造利益被吞噬的深淵感
             document.body.style.backgroundColor = '#1A1A1A';
             document.body.style.color = '#F4F1EA';
+
+            const mainContent = document.getElementById('main-content');
+            mainContent.className = 'inner-box tragedy-bg';
+
             const profitColor = res.netProfit >= 0 ? '#00e5ff' : '#7A2021';
             const profitText = res.netProfit >= 0 ? '獲利' : '嚴重虧損';
 
-            document.getElementById('auction-area').innerHTML = `
-                <h2 style="color:#F4F1EA;">拍賣落槌：贏家的詛咒</h2>
-                <div style="font-size: 1.2em; line-height: 2;">
-                    <p>⚜️ 得標買家：<b>${res.winnerName}</b> (出價 $${res.bidAmount})</p>
-                    <p>👁️ 受眾真實價值：$${res.trueValue}</p>
-                    <p style="color: ${profitColor}; font-size: 1.5em; font-weight:bold;">📉 買家本次${profitText}：$${res.netProfit}</p>
-                    <hr style="border-color:#333">
-                    <p style="color:#888;">不管買家虧多慘，Google 黑盒子平台照樣抽成...</p>
-                    <p class="tragedy-text" style="font-size:1.8em; margin-top:20px;">🩸 內容媒體最終實得：$${res.mediaFinal}</p>
+            // 2. 完美對應後端精確數值，印出扣款過程與「進入下一輪」按鈕
+            mainContent.innerHTML = `
+                <h2 class="tragedy-text" style="font-size: 2.2em; color: #7A2021; margin-bottom: 5px;">拍賣落槌：贏家的詛咒</h2>
+                <p style="font-style: italic; color: #888; margin-bottom: 30px;">這是一場演算法的狂歡，與內容創作者的悲歌。</p>
+                
+                <div style="text-align:left; font-size:1.15em; line-height: 2; max-width: 550px; margin: 0 auto;">
+                    <p>⚜️ <b>得標買家</b>：${res.winnerName} (最終出價 $${res.bidAmount} NTD)</p>
+                    <p>👁️ <b>受眾隱藏真實價值</b>：$${res.trueValue} NTD</p>
+                    <p style="color: ${profitColor}; font-size: 1.4em; font-weight: bold; margin: 15px 0; text-align: center; border: 1px dashed ${profitColor}; padding: 5px;">
+                        📉 廣告主本次${profitText}：$${res.netProfit} NTD
+                    </p>
+                    
+                    <hr style="border-color: #333; margin: 20px 0;">
+                    <p style="color: #888; font-size: 0.95em; text-align: center; margin-bottom: 15px;">— 0.1秒內的黑盒子分配流水線 (平台強制扣款) —</p>
+                    <p style="color: #bbb;">❌ 扣除 Google DSP 服務費 (15%): -$${res.dspFee} NTD</p>
+                    <p style="color: #bbb;">❌ 扣除 Google SSP/AdX 公開市場抽成 (20%): -$${res.sspFee} NTD</p>
+                    <p style="color: #bbb;">❌ 扣除 DMP數據商/代理商隱形科技稅 (35%): -$${res.techTax} NTD</p>
+                    
+                    <hr style="border-color: #333; margin: 20px 0;">
+                    <p class="tragedy-text" style="font-size: 1.6em; text-align: center; margin-top: 25px; color: #7A2021;">
+                        <b>🩸 台灣在地新聞媒體最終實得：$${res.mediaFinal} NTD</b>
+                    </p>
+                    <p style="text-align: center; font-size: 0.85em; color: #555; margin-bottom: 30px;">(科技巨頭強行將競價轉換為微觀單次曝光單價)</p>
                 </div>
-                <button id="next-round-btn" style="margin-top:20px;">進入下一輪</button>
+                
+                <button id="next-round-btn" style="background: #7A2021; color: #F4F1EA; border: 1px solid #7A2021; padding: 12px 35px; font-size: 1.1em; font-family: inherit; cursor: pointer;">
+                    進入下一輪拍賣 (Next Lot)
+                </button>
             `;
 
+            // 3. 綁定下一輪的點擊事件
             document.getElementById('next-round-btn').onclick = () => {
                 socket.emit('host_start_round');
             };
