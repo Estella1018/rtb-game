@@ -119,7 +119,12 @@
         // 即時出價紀錄
         socket.on('update_bids', (bids) => {
             const list = document.getElementById('bid-list');
-            list.innerHTML = bids.map(b => `<div>📜 [${b.name}] 出價： <strong>$${b.amount}</strong></div>`).join('');
+            if (bids.length === 0) {
+                list.innerHTML = '等待席間買家出價...';
+                return;
+            }
+            // 拿掉 $${b.amount}，改為古典優雅的動態提示文字
+            list.innerHTML = bids.map(b => `<div>📜 [${b.name}] 已成功呈交出價委託書於黑盒子 (加密傳輸中)</div>`).join('');
             list.scrollTop = list.scrollHeight;
         });
 
