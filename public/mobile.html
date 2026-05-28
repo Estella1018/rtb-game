@@ -155,18 +155,28 @@
             document.getElementById('reflection-screen').classList.remove('hidden');
         });
 
-        // 送出反思文字
+        // 送出反思文字 (支援無限次送出)
         document.getElementById('submit-reflection-btn').onclick = function () {
-            const text = document.getElementById('reflection-input').value;
-            if (!text) return;
+            const input = document.getElementById('reflection-input');
+            const text = input.value;
 
+            if (!text) return; // 如果沒打字就不動作
+
+            // 送出資料給伺服器
             socket.emit('submit_reflection', text);
 
-            // 送出後讓按鈕失效並改變文字
-            this.innerText = "已送出！請看大螢幕";
-            this.disabled = true;
-            this.style.background = '#999';
-            document.getElementById('reflection-input').disabled = true;
+            // 💡 【修正重點 4】清空輸入框，讓同學可以繼續打字
+            input.value = '';
+
+            // 給予短暫的視覺回饋，然後恢復原狀
+            const originalText = this.innerText;
+            this.innerText = "已送出！可繼續輸入...";
+            this.style.background = '#27ae60'; // 變成綠色提示成功
+
+            setTimeout(() => {
+                this.innerText = originalText;
+                this.style.background = '#7A2021'; // 恢復原本的暗紅色
+            }, 1500); // 1.5 秒後恢復
         };
     </script>
 </body>

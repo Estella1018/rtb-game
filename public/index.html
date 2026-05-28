@@ -59,7 +59,7 @@
 
         <div id="game-view">
             <h1>— 數位注意力古典拍賣會 —</h1>
-            <p>請台下買家準備 <b>$10,000 USD</b> 資金進場，目前台灣某在地新聞媒體正提供一個曝光版位，請根據接下來出現的「受眾輪廓」，決定您願意為這個廣告位出價多少</p>
+            <p>請台下買家準備 <b>$10,000 NTD</b> 資金進場，目前台灣某在地新聞媒體正提供一個曝光版位，請根據接下來出現的「受眾輪廓」，決定您願意為這個廣告位出價多少</p>
 
             <h3>席間買家名冊 (<span id="player-count">0</span>)</h3>
             <div id="player-list">等待買家入席...</div>
@@ -78,19 +78,20 @@
 
         <div id="result-view" style="display:none;">
         </div>
-        <div id="discussion-view" style="display:none;">
-            <h1 class="tragedy-text" style="font-size: 2.2em; margin-bottom: 20px;">— 終極反思：媒體的生存悲歌 —</h1>
-            <p style="font-size: 1.3em; line-height: 1.8; text-align: left; padding: 20px; border: 1px solid #7A2021; background: #FFFDFC; color: #2B2B2B;">
-                剛剛體驗過作為廣告主的你，現在換個角色：<br>
-                如果你現在是身為<b>只拿到 5 塊錢的新聞媒體主管</b>，為了不讓公司倒閉、為了繼續養活旗下的記者，你接下來會怎麼辦？<br>
-                <span style="color: #666; font-size: 0.85em;">(接業配？寫農場新聞賺點擊率？裁員？或者...？)</span>
-            </p>
-            
-            <h3 style="margin-top: 30px; border-bottom: 1px solid #2B2B2B; padding-bottom: 10px;">業界同業的生存抉擇（請用手機輸入）</h3>
-            <div id="reflection-board" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; min-height: 200px; justify-content: center;">
-            </div>
-        </div>
+    </div>
+    <div id="discussion-view" style="display:none;">
+        <h1 class="tragedy-text" style="font-size: 2.2em; margin-bottom: 20px;">— 終極反思：媒體的生存悲歌 —</h1>
+        <p
+            style="font-size: 1.3em; line-height: 1.8; text-align: left; padding: 20px; border: 1px solid #7A2021; background: #FFFDFC; color: #2B2B2B;">
+            剛剛體驗過作為廣告主的你，現在換個角色：<br>
+            如果你現在是身為<b>只拿到 5 塊錢的新聞媒體主管</b>，為了不讓公司倒閉、為了繼續養活旗下的記者，你接下來會怎麼辦？<br>
+            <span style="color: #666; font-size: 0.85em;">(接業配？寫農場新聞賺點擊率？裁員？或者...？)</span>
+        </p>
 
+        <h3 style="margin-top: 30px; border-bottom: 1px solid #2B2B2B; padding-bottom: 10px;">業界同業的生存抉擇（請用手機輸入）</h3>
+        <div id="reflection-board"
+            style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; min-height: 200px; justify-content: center;">
+        </div>
     </div>
 
     <script>
@@ -197,7 +198,7 @@
         });
 
         // 遊戲結束：第五輪結算完畢
-       // 覆蓋原本的 game_over 事件，加入進入反思的按鈕
+        // 覆蓋原本的 game_over 事件，加入進入反思的按鈕
         socket.on('game_over', (leaderboard) => {
             isGameOver = true;
             document.body.style.backgroundColor = '#F4F1EA';
@@ -231,8 +232,9 @@
         socket.on('start_discussion', () => {
             document.body.style.backgroundColor = '#1A1A1A';
             document.body.style.color = '#F4F1EA';
-            document.getElementById('main-content').innerHTML = ''; // 清空排行榜
-            document.getElementById('main-content').appendChild(document.getElementById('discussion-view'));
+
+            // 💡 【修正重點 2】直接把整個排行榜框框隱藏，顯示新的反思框框
+            document.getElementById('main-content').style.display = 'none';
             document.getElementById('discussion-view').style.display = 'block';
         });
 
@@ -240,9 +242,11 @@
         socket.on('new_reflection', (data) => {
             const board = document.getElementById('reflection-board');
             const card = document.createElement('div');
-            // 設定留言卡的古典樣式
-            card.style.cssText = 'background: #EBE7DD; color: #2B2B2B; padding: 10px 20px; border: 1px solid #7A2021; border-radius: 4px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); font-size: 1.1em; animation: fadeIn 0.5s;';
-            card.innerHTML = `<strong>${data.name}</strong>: ${data.text}`;
+
+            // 💡 【修正重點 3】改為深色底、白色字體，並加上邊框
+            card.style.cssText = 'background: #111; color: #F4F1EA; padding: 12px 20px; border: 1px solid #7A2021; border-radius: 4px; box-shadow: 2px 2px 8px rgba(0,0,0,0.5); font-size: 1.15em; animation: fadeIn 0.5s;';
+
+            card.innerHTML = `<strong style="color:#aaa;">${data.name}</strong>：${data.text}`;
             board.appendChild(card);
         });
     </script>
