@@ -78,6 +78,18 @@
 
         <div id="result-view" style="display:none;">
         </div>
+        <div id="discussion-view" style="display:none;">
+            <h1 class="tragedy-text" style="font-size: 2.2em; margin-bottom: 20px;">— 終極反思：媒體的生存悲歌 —</h1>
+            <p style="font-size: 1.3em; line-height: 1.8; text-align: left; padding: 20px; border: 1px solid #7A2021; background: #FFFDFC; color: #2B2B2B;">
+                剛剛體驗過作為廣告主的你，現在換個角色：<br>
+                如果你現在是身為<b>只拿到 5 塊錢的新聞媒體主管</b>，為了不讓公司倒閉、為了繼續養活旗下的記者，你接下來會怎麼辦？<br>
+                <span style="color: #666; font-size: 0.85em;">(接業配？寫農場新聞賺點擊率？裁員？或者...？)</span>
+            </p>
+            
+            <h3 style="margin-top: 30px; border-bottom: 1px solid #2B2B2B; padding-bottom: 10px;">業界同業的生存抉擇（請用手機輸入）</h3>
+            <div id="reflection-board" style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; min-height: 200px; justify-content: center;">
+            </div>
+        </div>
 
     </div>
 
@@ -185,6 +197,7 @@
         });
 
         // 遊戲結束：第五輪結算完畢
+       // 覆蓋原本的 game_over 事件，加入進入反思的按鈕
         socket.on('game_over', (leaderboard) => {
             isGameOver = true;
             document.body.style.backgroundColor = '#F4F1EA';
@@ -196,14 +209,41 @@
                 return `<div style="font-size:1.5em; margin: 10px 0;">${icon} 第 ${index + 1} 名: <b>${p.name}</b> <span style="color:${color}">(最終資產: $${p.balance})</span></div>`;
             }).join('');
 
-            // 這裡是最後階段，直接覆蓋整個 main-content 即可
             document.getElementById('main-content').innerHTML = `
                 <h1>— 結算：誰是資本的奴隸？ —</h1>
                 <p style="margin-bottom: 30px;">廣告主殺紅了眼在競標，但真正的贏家只有不斷抽成的科技巨頭。</p>
-                <div style="text-align:left; max-width: 500px; margin: 0 auto;">
+                <div style="text-align:left; max-width: 500px; margin: 0 auto; margin-bottom: 40px;">
                     ${rankHtml}
                 </div>
+                
+                <button id="start-discuss-btn" style="background: #7A2021; color: #F4F1EA; border: 1px solid #7A2021; padding: 15px 40px; font-size: 1.2em; cursor: pointer;">
+                    進入終極反思 (全班互動)
+                </button>
             `;
+
+            // 綁定切換按鈕
+            document.getElementById('start-discuss-btn').onclick = () => {
+                socket.emit('host_start_discussion');
+            };
+        });
+
+        // 接收伺服器：切換到反思畫面
+        socket.on('start_discussion', () => {
+            document.body.style.backgroundColor = '#1A1A1A';
+            document.body.style.color = '#F4F1EA';
+            document.getElementById('main-content').innerHTML = ''; // 清空排行榜
+            document.getElementById('main-content').appendChild(document.getElementById('discussion-view'));
+            document.getElementById('discussion-view').style.display = 'block';
+        });
+
+        // 接收伺服器：即時顯示學生的留言
+        socket.on('new_reflection', (data) => {
+            const board = document.getElementById('reflection-board');
+            const card = document.createElement('div');
+            // 設定留言卡的古典樣式
+            card.style.cssText = 'background: #EBE7DD; color: #2B2B2B; padding: 10px 20px; border: 1px solid #7A2021; border-radius: 4px; box-shadow: 2px 2px 5px rgba(0,0,0,0.3); font-size: 1.1em; animation: fadeIn 0.5s;';
+            card.innerHTML = `<strong>${data.name}</strong>: ${data.text}`;
+            board.appendChild(card);
         });
     </script>
 </body>

@@ -102,6 +102,17 @@ io.on('connection', (socket) => {
         delete players[socket.id];
         io.emit('update_players', Object.values(players));
     });
+    // 💡 新增 1：主持人點擊進入反思階段
+    socket.on('host_start_discussion', () => {
+        io.emit('start_discussion');
+    });
+
+    // 💡 新增 2：接收手機端傳來的反思關鍵字
+    socket.on('submit_reflection', (text) => {
+        if (!players[socket.id]) return;
+        // 把學生的回答廣播給大螢幕
+        io.emit('new_reflection', { name: players[socket.id].name, text: text });
+    });
 });
 
 const PORT = process.env.PORT || 3000;

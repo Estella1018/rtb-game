@@ -79,6 +79,13 @@
         <h2 id="result-title">等待拍賣官落槌...</h2>
         <p id="result-desc"></p>
     </div>
+    <div id="reflection-screen" class="card hidden">
+        <h2 class="tragedy-text">— 媒體生存抉擇 —</h2>
+        <p style="color: #555; font-size: 0.9em; line-height: 1.6;">你現在是只拿到 5 塊錢的新聞媒體主管，為了養活公司，你決定怎麼做？</p>
+        <input type="text" id="reflection-input" placeholder="例如：狂發業配文、裁員..."
+            style="width: 85%; padding: 15px; font-size: 1.1em; margin: 20px 0; border: 1px solid #7A2021;">
+        <button id="submit-reflection-btn" style="background: #7A2021;">送出抉擇至大螢幕</button>
+    </div>
 
     <script>
         const socket = io();
@@ -142,6 +149,25 @@
             document.getElementById('result-title').innerText = "拍賣會結束";
             document.getElementById('result-desc').innerHTML = "請看大螢幕確認最終排名！<br>看看誰破產了，誰又賺飽了？";
         });
+        // 接收伺服器：進入反思階段
+        socket.on('start_discussion', () => {
+            document.getElementById('wait-screen').classList.add('hidden');
+            document.getElementById('reflection-screen').classList.remove('hidden');
+        });
+
+        // 送出反思文字
+        document.getElementById('submit-reflection-btn').onclick = function () {
+            const text = document.getElementById('reflection-input').value;
+            if (!text) return;
+
+            socket.emit('submit_reflection', text);
+
+            // 送出後讓按鈕失效並改變文字
+            this.innerText = "已送出！請看大螢幕";
+            this.disabled = true;
+            this.style.background = '#999';
+            document.getElementById('reflection-input').disabled = true;
+        };
     </script>
 </body>
 
